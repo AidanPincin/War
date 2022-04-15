@@ -186,10 +186,34 @@ class Player{
     }
     draw(){
         if(this.hp<0){this.hp=0}
-        if(this.up == true){y+=10}
-        if(this.down == true){y-=10}
-        if(this.right == true){x-=10}
-        if(this.left==true){x+=10}
+        if(this.up == true){
+            y+=10
+            const enemyCollision = enemys.find(enemy => this.x+20>=enemy.x-20+x && this.x-20<=enemy.x+20+x && this.y+20>=enemy.y-20+y && this.y-20<=enemy.y+20+y)
+            if(enemyCollision != undefined){
+                y-=10
+            }
+        }
+        if(this.down == true){
+            y-=10
+            const enemyCollision = enemys.find(enemy => this.x+20>=enemy.x-20+x && this.x-20<=enemy.x+20+x && this.y+20>=enemy.y-20+y && this.y-20<=enemy.y+20+y)
+            if(enemyCollision != undefined){
+                y+=10
+            }
+        }
+        if(this.right == true){
+            x-=10
+            const enemyCollision = enemys.find(enemy => this.x+20>=enemy.x-20+x && this.x-20<=enemy.x+20+x && this.y+20>=enemy.y-20+y && this.y-20<=enemy.y+20+y)
+            if(enemyCollision != undefined){
+                x+=10
+            }
+        }
+        if(this.left==true){
+            x+=10
+            const enemyCollision = enemys.find(enemy => this.x+20>=enemy.x-20+x && this.x-20<=enemy.x+20+x && this.y+20>=enemy.y-20+y && this.y-20<=enemy.y+20+y)
+            if(enemyCollision != undefined){
+                x-=10
+            }
+        }
         drawRect('#00ff00',this.x-20,this.y-20,40,40)
         for (let i=0; i<this.arrows.length; i++){
             let hit = this.arrows[i].draw()
