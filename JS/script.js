@@ -141,13 +141,13 @@ class Arrow{
                 ctx.strokeStyle = '#ff0000'
                 ctx.stroke()
             }
-            for (let i=0; i<enemys.length; i++){
-                let hit = this.detectHit(enemys[i].x-20+x,enemys[i].y-20+y,40,40)
+            for (let i=0; i<enemyBases[0].enemys.length; i++){
+                let hit = this.detectHit(enemyBases[0].enemys[i].x-20+x,enemyBases[0].enemys[i].y-20+y,40,40)
                 console.log(hit)
                 if(hit == true){
-                    enemys[i].hp -= this.dmg
-                    if(enemys[i].hp<=0){
-                        enemys.splice(i,1)
+                    enemyBases[0].enemys[i].hp -= this.dmg
+                    if(enemyBases[0].enemys[i].hp<=0){
+                        enemyBases[0].enemys.splice(i,1)
                     }
                     return true
                 }
@@ -163,8 +163,87 @@ class Arrow{
         }
     }
 }
+class Soilder{
+    constructor(x,y){
+        this.dmg = 5
+        this.hp = 100
+        this.max_hp = 100
+        this.x = x
+        this.y = y
+        this.time = 0
+    }
+    draw(){
+        const x_dist = (player.x-20)-(this.x-20+x)
+        const y_dist = (player.y-20)-(this.y-20+y)
+        const dist = Math.sqrt(Math.pow(x_dist,2)+Math.pow(y_dist,2))
+        const enemyInRange = enemyBases[0].enemys.find(enemy => Math.sqrt(Math.pow((enemy.x-20+x)-(this.x-20+x),2)+Math.pow((enemy.y-20+y)-(this.y-20+y),2))<=Math.sqrt(320000))
+        const allyCollision = player.army.find(ally => ally != this && Math.sqrt(Math.pow((ally.x-20+x)-(this.x-20+x),2)+Math.pow((ally.y-20+y)-(this.y-20+y),2))<=60)
+        if (enemyInRange != undefined){
+            const x_dif = (enemyInRange.x-20+x)-(this.x-20+x)
+            const y_dif = (enemyInRange.y-20+y)-(this.y-20+y)
+            const dif = Math.sqrt(Math.pow(x_dif,2)+Math.pow(y_dif,2))
+            if (dif>60){
+                if (allyCollision == undefined){
+                    const xspd = (x_dif/dif)*10
+                    const yspd = (y_dif/dif)*10
+                    this.x += xspd
+                    this.y += yspd
+                }
+                else{
+                    const x_dist = (allyCollision.x-20)-(this.x-20)
+                    const y_dist = (allyCollision.y-20)-(this.y-20)
+                    const dist = Math.sqrt(Math.pow(x_dist,2)+Math.pow(y_dist,2))
+                    const xspd = (x_dist/dist)*10
+                    const yspd = (y_dist/dist)*10
+                    this.x -= xspd
+                    this.y -= yspd
+                }
+            }
+            else{
+                this.time += 1
+                drawRect('#ffffff',this.x-20+x,this.y-50+y,40,5)
+                drawRect('#0000ff',this.x-20+x,this.y-50+y,(this.time/60)*40,5)
+                if (this.time>=60){
+                    this.time = 0
+                    enemyInRange.hp-=this.dmg
+                    if (enemyInRange.hp<=0){
+                        enemyBases[0].enemys.splice(enemyBases[0].enemys.indexOf(enemyInRange),1)
+                    }
+                }
+            }
+        }
+        else if (dist>=350){
+            if (allyCollision == undefined){
+                const xspd = (x_dist/dist)*10
+                const yspd = (y_dist/dist)*10
+                this.x += xspd
+                this.y += yspd
+            }
+            else{
+                const x_dist = (allyCollision.x-20)-(this.x-20)
+                const y_dist = (allyCollision.y-20)-(this.y-20)
+                const dist = Math.sqrt(Math.pow(x_dist,2)+Math.pow(y_dist,2))
+                const xspd = (x_dist/dist)*10
+                const yspd = (y_dist/dist)*10
+                this.x -= xspd
+                this.y -= yspd
+            }
+        }
+        drawRect('#00ff00',this.x-20+x,this.y-20+y,40,40)
+        drawRect('#ffffff',this.x-20+x,this.y-40+y,40,10)
+        drawRect('#ff0000',this.x-20+x,this.y-40+y,(this.hp/this.max_hp)*40,10)
+    }
+    drawMiniMap(){
+        drawRect('#00ff00',875+(this.x-20+x)/12,75+(this.y-20+y)/12,40/12,40/12)
+    }
+}
 class Player{
     constructor(){
+        this.gps = 0
+        this.population = 5
+        this.max_population = 5
+        this.fps = 0
+        this.ufps = 2
         this.gold = 100
         this.food = 100
         this.armySize = 0
@@ -177,39 +256,62 @@ class Player{
         this.y = 400
         this.arrows = []
         this.bowReload = 0
-        this.arrowDmg = 25
+        this.arrowDmg = 50
         this.arrowSpeed = 15
         this.bowAttackSpeed = 5
         this.meleeDmg = 10
         this.meleeReload = 0
         this.meleeAttackSpeed = 1
+        this.time = 0
+        this.farms = [new Objct(200,600,100,50,'brown')]
+        this.houses = [new Objct(600,600,200,200,'brown')]
+        this.army = [new Soilder(300,300), new Soilder(400,300), new Soilder(500,300), new Soilder(300,400), new Soilder(500,400)]
     }
     draw(){
+        this.armySize = this.army.length
+        this.ufps = 2+this.army.length*2
+        this.population = this.army.length
+        for (let i=0; i<this.farms.length; i++){
+            this.farms[i].draw()
+        }
+        for (let i=0; i<this.houses.length; i++){
+            this.houses[i].draw()
+        }
+        this.fps = this.farms.length*10-this.ufps
+        this.gps = this.houses.length
+        if(this.time<60){
+            this.time += 1
+        }
+        else{
+            this.time = 0
+            this.food += this.fps/10
+            this.gold += this.gps/10
+        }
         if(this.hp<0){this.hp=0}
         if(this.up == true){
             y+=10
-            const enemyCollision = enemys.find(enemy => this.x+20>=enemy.x-20+x && this.x-20<=enemy.x+20+x && this.y+20>=enemy.y-20+y && this.y-20<=enemy.y+20+y)
+            const enemyCollision = enemyBases[0].enemys.find(enemy => this.x+20>=enemy.x-20+x && this.x-20<=enemy.x+20+x && this.y+20>=enemy.y-20+y && this.y-20<=enemy.y+20+y)
             if(enemyCollision != undefined){
                 y-=10
             }
         }
         if(this.down == true){
             y-=10
-            const enemyCollision = enemys.find(enemy => this.x+20>=enemy.x-20+x && this.x-20<=enemy.x+20+x && this.y+20>=enemy.y-20+y && this.y-20<=enemy.y+20+y)
+            const enemyCollision = enemyBases[0].enemys.find(enemy => this.x+20>=enemy.x-20+x && this.x-20<=enemy.x+20+x && this.y+20>=enemy.y-20+y && this.y-20<=enemy.y+20+y)
             if(enemyCollision != undefined){
                 y+=10
             }
         }
         if(this.right == true){
             x-=10
-            const enemyCollision = enemys.find(enemy => this.x+20>=enemy.x-20+x && this.x-20<=enemy.x+20+x && this.y+20>=enemy.y-20+y && this.y-20<=enemy.y+20+y)
+            const enemyCollision = enemyBases[0].enemys.find(enemy => this.x+20>=enemy.x-20+x && this.x-20<=enemy.x+20+x && this.y+20>=enemy.y-20+y && this.y-20<=enemy.y+20+y)
             if(enemyCollision != undefined){
                 x+=10
             }
         }
         if(this.left==true){
             x+=10
-            const enemyCollision = enemys.find(enemy => this.x+20>=enemy.x-20+x && this.x-20<=enemy.x+20+x && this.y+20>=enemy.y-20+y && this.y-20<=enemy.y+20+y)
+            const enemyCollision = enemyBases[0].enemys.find(enemy => this.x+20>=enemy.x-20+x && this.x-20<=enemy.x+20+x && this.y+20>=enemy.y-20+y && this.y-20<=enemy.y+20+y)
             if(enemyCollision != undefined){
                 x-=10
             }
@@ -251,11 +353,11 @@ class Player{
             drawRect('#0000ff',this.x-20,this.y-50,this.meleeReload/(60*this.meleeAttackSpeed)*40,5)
             if(this.meleeReload>=60*this.meleeAttackSpeed){
                 this.meleeReload = 0
-                const closestEnemy = enemys.find(enemy => Math.sqrt(Math.pow((this.x-20)-(enemy.x-20+x),2)+Math.pow((this.y-20)-(enemy.y-20+y),2))<=60)
+                const closestEnemy = enemyBases[0].enemys.find(enemy => Math.sqrt(Math.pow((this.x-20)-(enemy.x-20+x),2)+Math.pow((this.y-20)-(enemy.y-20+y),2))<=60)
                 if(closestEnemy != undefined){
                     closestEnemy.hp -= this.meleeDmg
                     if (closestEnemy.hp<=0){
-                        enemys.splice(enemys.indexOf(closestEnemy),1)
+                        enemyBases[0].enemys.splice(enemyBases[0].enemys.indexOf(closestEnemy),1)
                     }
                 }
             }
@@ -265,11 +367,35 @@ class Player{
         }
         drawRect('#ffffff',this.x-20,this.y-40,40,10)
         drawRect('#ff0000',this.x-20,this.y-40,(this.hp/this.max_hp)*40,10)
+        for (let i=0; i<this.army.length; i++){
+            this.army[i].draw()
+        }
     }
-    drawMiniMap(){drawRect('#00ff00',875+(this.x-20)/12,75+(this.y-20)/12,40/12,40/12)}
-    drawMap(){drawRect('#00ff00',350+(this.x-20)/12,350+(this.y-20)/12,40/12,40/12)}
+    drawMiniMap(){
+        drawRect('#00ff00',875+(this.x-20)/12,75+(this.y-20)/12,40/12,40/12)
+        for (let i=0; i<this.farms.length; i++){
+            this.farms[i].drawMiniMap()
+        }
+        for (let i=0; i<this.houses.length; i++){
+            this.houses[i].drawMiniMap()
+        }
+        for (let i=0; i<this.army.length; i++){
+            this.army[i].drawMiniMap()
+        }
+    }
+    drawMap(){
+        drawRect('#00ff00',350+(this.x-20)/12,350+(this.y-20)/12,40/12,40/12)
+        for (let i=0; i<this.farms.length; i++){
+            this.farms[i].drawMap()
+        }
+        for (let i=0; i<this.houses.length; i++){
+            this.houses[i].drawMap()
+        }
+    }
     displayStats(){
-        const txt = [new Txt('Gold -- '+this.gold,900,300),new Txt('Food -- '+this.food,900,350),new Txt('Army Size -- '+this.armySize+'/'+this.armyCapacity,900,400)]
+        const txt = [new Txt('Gold -- '+Math.floor(this.gold),900,300),new Txt('Food -- '+Math.floor(this.food),900,350),
+        new Txt('Army Size -- '+this.armySize+'/'+this.armyCapacity,900,400), new Txt('HP -- '+this.hp+'/'+this.max_hp,900,450),
+        new Txt('Food/s -- '+this.fps/10+'/s',900,500), new Txt('Gold/s -- '+this.gps/10+'/s',900,550), new Txt('Pop. -- '+this.population+'/'+this.max_population,900,600)]
         for (let i=0; i<txt.length; i++){txt[i].drawOnSidePanal()}
     }
     keyPress(e,bln){
@@ -290,8 +416,43 @@ class Enemy{
         const x_dist = (player.x-20)-(this.x-20+x)
         const y_dist = (player.y-20)-(this.y-20+y)
         const dist = Math.sqrt(Math.pow(x_dist,2)+Math.pow(y_dist,2))
-        const allyCollision = enemys.find(enemy => enemy != this && Math.sqrt(Math.pow((enemy.x-20+x)-(this.x-20+x),2)+Math.pow((enemy.y-20+y)-(this.y-20+y),2))<=60)
-        if (dist<=Math.sqrt(320000) && dist>=60){
+        const allyCollision = enemyBases[0].enemys.find(enemy => enemy != this && Math.sqrt(Math.pow((enemy.x-20+x)-(this.x-20+x),2)+Math.pow((enemy.y-20+y)-(this.y-20+y),2))<=60)
+        const enemyInRange = player.army.find(enemy => Math.sqrt(Math.pow((enemy.x-20+x)-(this.x-20+x),2)+Math.pow((enemy.y-20+y)-(this.y-20+y),2))<=Math.sqrt(320000))
+        if (enemyInRange != undefined){
+            const x_dif = (enemyInRange.x-20+x)-(this.x-20+x)
+            const y_dif = (enemyInRange.y-20+y)-(this.y-20+y)
+            const dif = Math.sqrt(Math.pow(x_dif,2)+Math.pow(y_dif,2))
+            if (allyCollision == undefined){
+                if (dif>60){
+                    const xspd = (x_dif/dif)*8
+                    const yspd = (y_dif/dif)*8
+                    this.x += xspd
+                    this.y += yspd
+                }
+                else{
+                    this.time += 1
+                    drawRect('#ffffff',this.x-20+x,this.y-50+y,40,5)
+                    drawRect('#0000ff',this.x-20+x,this.y-50+y,(this.time/60)*40,5)
+                    if (this.time>=60){
+                        this.time = 0
+                        enemyInRange.hp -= this.dmg
+                        if (enemyInRange.hp<=0){
+                            player.army.splice(player.army.indexOf(enemyInRange),1)
+                        }
+                    }
+                }
+            }
+            else{
+                const x_dist = (allyCollision.x-20+x)-(this.x-20+x)
+                const y_dist = (allyCollision.y-20+y)-(this.y-20+y)
+                const dist = Math.sqrt(Math.pow(x_dist,2)+Math.pow(y_dist,2))
+                const xspd = (x_dist/dist)*8
+                const yspd = (y_dist/dist)*8
+                this.x -= xspd
+                this.y -= yspd
+            }
+        }
+        else if (dist<=Math.sqrt(320000) && dist>=60){
             if (allyCollision == undefined){
                 const xspd = (x_dist/dist)*8
                 const yspd = (y_dist/dist)*8
@@ -308,13 +469,15 @@ class Enemy{
                 this.y -= yspd
             }
         }
-        if (dist<=60){
+        if (dist<=60 && enemyInRange==undefined){
             this.time += 1
             drawRect('#ffffff',this.x-20+x,this.y-50+y,40,5)
             drawRect('#0000ff',this.x-20+x,this.y-50+y,(this.time/60)*40,5)
         }
         else{
-            this.time = 0
+            if (enemyInRange == undefined){
+                this.time = 0
+            }
         }
         if (this.time>=60){
             this.time = 0
@@ -328,28 +491,37 @@ class Enemy{
         drawRect('#7d0000',875+(this.x-20+x)/12,75+(this.y-20+y)/12,40/12,40/12)
     }
 }
-const objects = [new Objct(800,800,300,300,'#ffff00'),new Objct(807.5,900,75,100,'#000000')]
-const texts = [new Txt('SHOP',800,650,72)]
-const enemys = [new Enemy(1600,1600,100,5), new Enemy(1000,1000,100,5),new Enemy(1200,1100,100,5),new Enemy(1300,1400,100,5),new Enemy(1100,1500,100,5)]
+class EnemyBase{
+    constructor(){
+        this.enemys = [new Enemy(1600,1600,100,5), new Enemy(1700,1600,100,5),new Enemy(1800,1600,100,5),new Enemy(1600,1700,100,5),new Enemy(1700,1700,100,5),new Enemy(1800,1700,100,5)]
+    }
+    draw(){
+        for (let i=0; i<this.enemys.length; i++){
+            this.enemys[i].draw()
+        }
+    }
+    drawMiniMap(){
+        for (let i=0; i<this.enemys.length; i++){
+            this.enemys[i].drawMiniMap()
+        }
+    }
+    drawMap(){}
+}
+const enemyBases = [new EnemyBase()]
 const player = new Player()
 let time = 0
 let fps = 60
 function mainLoop(){
     drawRect('#7d7d7d',800,0,200,200)
     player.drawMiniMap()
-    for (let i=0; i<objects.length;i++){objects[i].drawMiniMap()}
-    for (let i=0; i<texts.length; i++){texts[i].drawMiniMap()}
-    for (let i=0; i<enemys.length; i++){enemys[i].drawMiniMap()}
+    for (let i=0; i<enemyBases.length; i++){enemyBases[i].drawMiniMap()}
     time += 1
     drawRect('#007d00',0,0,800,800)
-    for (let i=0; i<objects.length;i++){objects[i].draw()}
-    for (let i=0; i<texts.length; i++){texts[i].draw()}
-    for (let i=0; i<enemys.length; i++){enemys[i].draw()}
+    for (let i=0; i<enemyBases.length; i++){enemyBases[i].draw()}
     player.draw()
     if(mapOpen==true){
         drawRect('#7d7d7d',0,0,800,800)
-        for (let i=0; i<objects.length;i++){objects[i].drawMap()}
-        for (let i=0; i<texts.length; i++){texts[i].drawMap()}
+        for (let i=0; i<enemyBases.length; i++){enemyBases[i].drawMap()}
         player.drawMap()
         drawRect('#ffffff',800,0,200,800)
     }
